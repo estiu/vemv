@@ -1,0 +1,2 @@
+- locals.merge!(values: [[I18n.t!("fields.yes"), true], [(locals[:no_label] || I18n.t!("fields.no")), false]])
+= render "fields/select", locals.merge(locals: locals)

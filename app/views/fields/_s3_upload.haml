@@ -1,0 +1,47 @@
+- item_wrapper = s3_item_wrapper_class
+- object_template = "object_template_for_#{key}"
+- object_index = "object_index_for_#{key}"
+- name_prefix = "#{target.class.to_s.underscore}[#{key}_attributes]"
+
+.fileupload-content
+  .fileupload-progress
+.file-upload
+  = form.label :filename, t('add_a_file'), class: 'btn btn-info'
+  = form.file_field :filename, use_action_status: true, class: 'file-uploader', style: ("display: none" unless Rails.env.test?)
+= form.fields_for(key, item) do |f|
+  = form_fields(f, locals[:translations], name_prefix: "#{name_prefix}[{{#{object_index}}}]") do |field|
+    :javascript
+      #{object_index} = #{target.send(key).size - 2}
+      #{object_template} = #{partial_to_js_template('fields/s3_upload_item', field: field, visible_name: '{{visible_name}}', id: '{{id}}', display_removal: true)}
+
+:javascript
+  $('.jquery-file-upload').fileupload(
+    _.extend({
+      done: function(event, data){
+        var filename = $(data.jqXHR.responseXML).find("Location").text();
+        var visible_name = data.files[0].name
+        var key = $(data.jqXHR.responseXML).find("Key").text();
+        ON_FILE_UPLOAD(
+          {filename: filename, key: key, visible_name: visible_name},
+          function(id){
+            $('#{all_objects_wrapper}').append(
+              #{object_template}({#{object_index}: (#{object_index} += 1), visible_name: visible_name, id: id})
+            )
+          },
+          notify_uploader_ui_problem
+        )
+      }
+    },
+    DEFAULT_UPLOAD_OPTIONS)
+  )
+  $(document).on('click', '.remove-nested-attribute-item, .remove-nested-attribute-item *', function(){
+    var this_element = $(this)
+    ON_FILE_REMOVAL(
+      this_element.closest('.#{item_wrapper}').data('upload-item-id'),
+      function(){
+        this_element.closest('.#{item_wrapper}').remove()
+      },
+      notify_uploader_deletion_problem
+    )
+    return false
+  })

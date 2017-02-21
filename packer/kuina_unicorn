@@ -1,0 +1,65 @@
+#!/bin/sh
+
+### BEGIN INIT INFO
+# Provides:          unicorn
+# Required-Start:    $all
+# Required-Stop:     $all
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: starts the unicorn web server
+# Description:       starts unicorn
+### END INIT INFO
+
+set -e # fail due to return codes
+set -u # fail due to undefined variables
+
+USER="root"
+TIMEOUT=60
+APP_NAME="kuina"
+APP_ROOT="/$USER/$APP_NAME"
+PID_DIR=$APP_ROOT/tmp/pids
+PID=$PID_DIR/unicorn.pid
+
+# make sure the app exists
+cd $APP_ROOT || exit 1
+
+CMD="
+  cd $APP_ROOT
+  git fetch
+  git reset --hard origin/master
+  git pull
+  bundle --without development test --path vendor/bundle
+  bundle exec rake db:migrate
+  bundle exec rake assets:precompile
+  bundle exec unicorn -D -c config/unicorn.rb
+"
+
+sig () {
+  test -s "$PID" && kill -$1 `cat $PID`
+}
+
+run () {
+  su - $USER -c "$CMD"
+}
+
+case "$1" in
+start)
+  sig 0 && echo >&2 "Already running" && exit 0
+  run
+  ;;
+stop)
+  sig QUIT && exit 0
+  echo >&2 "Not running"
+  ;;
+force-stop)
+  sig TERM && exit 0
+  echo >&2 "Not running"
+  ;;
+reopen-logs)
+  sig USR1
+  ;;
+*)
+  echo >&2 "Usage: $0 <start|stop|force-stop|reopen-logs>"
+  exit 1
+  ;;
+esac

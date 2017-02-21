@@ -1,0 +1,3 @@
+- raw_value = form.object.send(key)
+- value = raw_value.try(:send, :strftime, date_format) if raw_value.respond_to?(:strftime)
+= form.text_field key, html_opts.merge(class: "#{html_opts[:class]} datepicker noinput", value: value)

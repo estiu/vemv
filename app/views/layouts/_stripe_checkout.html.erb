@@ -1,0 +1,45 @@
+<script src='https://checkout.stripe.com/checkout.js'></script>
+
+<script>
+
+  (function(){
+
+    var amount_cents = <%= the_order.payable_amount_cents %>
+    var received_stripe_token = false
+
+    var handler = StripeCheckout.configure({
+      key: '<%= Rails.application.secrets.stripe_publishable_key %>',
+      image: '<%= the_image_path %>',
+      locale: '<%= I18n.locale %>',
+      closed: function(){
+        if (!received_stripe_token){
+          $('.block-ui').remove()
+        }
+      },
+      token: function(token) {
+        var the_form = $('<%= the_form_selector %>')
+        the_form.find('<%= the_hidden_input_selector %>').val(token.id)
+        the_form.submit()
+      }
+    });
+
+    var cta = $('<%= the_button_selector %>')
+    var the_form = $('<%= the_form_selector %>')
+    cta.on('click', function(e) {
+      if (cta.is('[readonly]')){
+        return
+      }
+      the_form.append("<div class='block-ui' style='position: absolute; top: 0; bottom: 0; left: 0; right: 0; background-color: white; opacity: 0.45; z-index: 3'>")
+      handler.open({
+        name: '<%= j the_popup_title %>',
+        email: '<%= current_user.email  %>',
+        description: '<%= j the_description %>',
+        currency: "<%= Payable::STRIPE_EUR %>",
+        amount: amount_cents
+      });
+      e.preventDefault();
+    });
+
+  })();
+
+</script>

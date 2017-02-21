@@ -1,0 +1,46 @@
+- locals.merge!(html_opts: {class: "#{locals[:html_class]} #{"form-control" if !(%i(checkbox checkboxes submit).include?(as)) && !locals[:no_form_control]}"})
+- %i(autofocus value style disabled selected rows).each do |key|
+  - locals[:html_opts].merge!(key => locals[key]) if locals.keys.include?(key)
+
+- locals[:html_opts].merge!(required: true) if (locals[:required] != false) && !locals[:optional] && %i(date datetime text password currency email).include?(as) && !Rails.env.test? # not in test env, so one can test backend validation
+
+- if locals.keys.include?(:name_prefix)
+  - locals[:html_opts].merge!(name: "#{name_prefix}[#{key}]")
+  - locals[:html_opts].merge!(id: "#{name_prefix}[#{key}]".gsub('[', '_').gsub(']', ''))
+
+.form-group{class: "#{"has-error" if form.object.errors[key].present?} #{locals[:form_group_class]} #{"has-popover" if locals[:popover]}"}
+  - render_label = !([:submit].include? key) && !([:hidden, :nested_attributes, :s3_upload].include? as)
+  - caption = locals[:caption] || t("#{prefix}.#{key}", default: key.to_s.humanize)
+  - locals[:html_opts].merge!(value: caption) if !render_label && !([:hidden].include? as) && !locals.keys.include?(:value)
+  - if render_label && !locals[:only_input]
+    - label_html = locals.fetch(:label_html, {})
+    - label_html[:class] = "#{label_html[:class]} control-label"
+    - label_html[:value] = caption
+    - label_html[:style] = "#{label_html[:style]}; width: 100%; display: inline" # inline: for the popover indicator to be displayed in the same line
+    - (label_html[:for] = locals[:html_opts][:id]) if locals[:html_opts][:id].present?
+    = form.label key, label_html do
+      = caption
+      - if locals[:remove_button]
+        %span.remove-nested-attribute-item.float-right{style: 'color: black'}
+          = remove_button
+      - if locals[:popover]
+        -# <a>/tabindex/role as explained here http://getbootstrap.com/javascript/#popovers
+        %a{'data-toggle' => 'popover',
+          'data-estiu-popover-type' => (locals[:popover][:type] || 'focus'),
+          'data-content' => (locals[:popover][:text] || locals[:popover][:html]),
+          'data-html' => locals[:popover].keys.include?(:html).to_s,
+          tabindex: '0',
+          role: 'button'}
+          %span.glyphicon.glyphicon-question-sign.black
+        -# empty div: for causing a newline, which is expected after a <label>.
+        %div
+  - if locals[:force_newline_after_label]
+    %div
+  - unless locals[:only_label]
+    = render "fields/#{as}", locals.merge(locals: locals)
+  - if render_label && locals[:optional]
+    %span.optional= t 'fields.optional'
+  - unless locals[:only_label]
+    - Array(form.object.errors[key]).each do |error|
+      .help-block{class: "#{key}-error #{"error-is-blank" if error == t('errors.messages.blank')}"}= error
+  = locals[:after]

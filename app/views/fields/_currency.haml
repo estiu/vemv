@@ -1,0 +1,10 @@
+.input-group{class: "#{locals[:input_group_class]}"}
+  %span.input-group-addon
+    €
+  - value = form.object.send(key)
+  - opts = html_opts.merge(class: "#{html_opts[:class]} currency", value: (value / 100.0 if value))
+  -# XXX ideally: if user type something that would surpass the max, change the value to the max instead of permitting no changes.
+  - %i(min max).each do |attr|
+    - opts.merge!("data-#{attr}-value" => Money.new(locals[attr] + 900).format(symbol: false, no_cents_if_whole: false, delimiter: nil, separator: CurrencyFormat::DECIMAL_SEPARATORS[CurrencyFormat::USA_UK])) if locals[attr]
+  = form.text_field "#{key}_facade".to_sym, opts
+= form.hidden_field key, html_opts.merge(class: "#{html_opts[:class]} cents")

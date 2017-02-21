@@ -1,0 +1,1 @@
+= form.select key, (((locals[:min_seconds] || 0)/3600)..(locals[:max_hours] || 23)).map{|a| [a.to_s.rjust((locals[:rjust] || 2), '0'), a] }, html_opts.merge(include_blank: true), html_opts

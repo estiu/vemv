@@ -1,0 +1,46 @@
+- add_another = locals[:add_another]
+- all_objects_wrapper = "all-#{key.to_s.gsub('_', '-')}"
+- item_wrapper = "nested-attributes-item-wrapper-#{key}"
+- object_template = "object_template_for_#{key}"
+- object_index = "object_index_for_#{key}"
+- objects = form.object.send(key).any? ? form.object.send(key) : locals.fetch(:build_if_absent, true) ?  [form.object.send(key).build] : []
+- name_prefix = "#{form.object_name}[#{key}_attributes]"
+
+%div{id: all_objects_wrapper}
+  - objects.each_with_index do |object, index|
+    = form.fields_for(key, object) do |f|
+      = form_fields(f, locals[:translations], name_prefix: "#{name_prefix}[#{index}]") do |field|
+        %span{class: item_wrapper}
+          .nested-attributes-item-partial
+            = render partial: locals[:partial], locals: locals.merge({field: field, first: index.zero?}).merge(locals: locals)
+          = field.(:id, as: :hidden, html_class: 'is-id-field')
+          = field.(:_destroy, as: :hidden, value: false, disabled: true, html_class: 'is-destroy-field') # deletions are doubly prevented: disabled + false.
+= form.fields_for(key, form.object.send(key).build) do |f|
+  = form_fields(f, locals[:translations], name_prefix: "#{name_prefix}[{{#{object_index}}}]") do |field|
+    - content_for :bottom_js do
+      :javascript
+        #{object_index} = #{form.object.send(key).size - 2};
+        #{object_template} = #{partial_to_js_template(locals[:partial], {field: field, first: false}.merge(locals: locals))};
+
+- content_for :bottom_js do
+  :javascript
+    $("##{add_another}").click(function(){
+      $('##{all_objects_wrapper}').append(
+        "<div class='#{item_wrapper}'>" +
+        #{object_template}({#{object_index}: (#{object_index} += 1)}) +
+        "</div>"
+      )
+      $('.#{item_wrapper}').last()#{locals[:on_added]}
+      return false
+    })
+    $(document).on('click', '.remove-nested-attribute-item, .remove-nested-attribute-item *', function(){
+      var wrapper = $(this).closest('.#{item_wrapper}')
+      var id = wrapper.find('.is-id-field').val()
+      if (id){
+        wrapper.find('.nested-attributes-item-partial').remove()
+        wrapper.find('.is-destroy-field').removeAttr('disabled').val(true)
+      } else {
+        wrapper.remove()
+      };
+      #{locals[:on_removed]};
+    })

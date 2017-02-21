@@ -1,0 +1,18 @@
+- backgrounds ||= []
+- all = sections.zip backgrounds
+
+.carousel.slide{"data-ride" => "carousel", id: id}
+  .carousel-inner{:role => "listbox"}
+    - all.each_with_index do |(section, background), n|
+      .item{class: "#{'active' if n.zero?}", style: "#{"background-image: url(#{background}); background-size: cover; height: 500px" if background}"}
+        .carousel-caption
+          = section
+  %a.left.carousel-control{"data-slide" => "prev", :href => "##{id}", :role => "button"}
+    %span.glyphicon.glyphicon-chevron-left{"aria-hidden" => "true"}
+    %span.sr-only= t '.previous'
+  %a.right.carousel-control{"data-slide" => "next", :href => "##{id}", :role => "button"}
+    %span.glyphicon.glyphicon-chevron-right{"aria-hidden" => "true"}
+    %span.sr-only= t '.next'
+  %ol.carousel-indicators
+    - sections.each_with_index do |_, n|
+      %li{"data-slide-to" => "#{n}", "data-target" => "##{id}", class: "#{'active' if n.zero?}"}

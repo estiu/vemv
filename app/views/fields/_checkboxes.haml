@@ -1,0 +1,4 @@
+- values.each do |value|
+  = form.label key do
+    = form.check_box key, html_opts.merge({multiple: true}), value.id, nil
+    = value
